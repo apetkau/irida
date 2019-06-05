@@ -196,3 +196,23 @@ sql_mode = "NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
 
 Then restart mysql `sudo service mysql restart`
 
+## 2. Forwarding requests to IRIDA via an HTTPS reverse proxy and the REST API
+
+It is possible to setup a webserver to act as a reverse proxy, where it will forward requests to IRIDA (running via Tomcat). This allows one to have IRIDA/Tomcat running on a private server situated behind a firewall and have a public server act as a gateway to access IRIDA. The public server could also be configured to use **https**.
+
+For example, IRIDA could be running on a private server at **http://private-irida/irida**, but made accessible via a public server running *https* at **https://public-server/irida**. Information on how to configure the servers can be found at <https://tomcat.apache.org/tomcat-8.0-doc/proxy-howto.html>.
+
+However, we have encountered issues where the IRIDA REST API would continue to return *http* links instead of *https* links. For example, you may access the REST API from **https://public-server/irida/api**, but links returned may be **http://public-server/irida/api/projects/1**. This can lead to issues using the REST API.
+
+To fix this issue, in addition to the instructions at <https://tomcat.apache.org/tomcat-8.0-doc/proxy-howto.html> for configuring Tomcat you will have to include the **scheme="https"** and **secure="true"** to the Tomcat `<Connector>` element in the Tomcat `server.xml` file to make Tomcat aware that it is being accessed using *https*.
+
+For example:
+
+```xml
+<Connector port="8080" protocol="HTTP/1.1"
+               scheme="https" proxyName="public-server" proxyPort="443" secure="true"
+               connectionTimeout="20000"
+               redirectPort="8443" />
+```
+
+Once this is configured, the URLs returned from the REST API should now be using *https* (**https://public-server/irida/api/projects/1**).
